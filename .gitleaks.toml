@@ -1,0 +1,13 @@
+[allowlist]
+description = "Allowlisted patterns for luv-db-mcp"
+
+# Ignore test/example files
+paths = [
+  '''dist/''',
+  '''node_modules/''',
+]
+
+# Ignore comments that mention credentials as documentation
+regexes = [
+  '''process\.env\.[A-Z_]+''',   # env var references are fine
+]
