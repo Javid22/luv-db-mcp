@@ -87,7 +87,7 @@ function createMcpServer() {
   if (process.env.DB_HOST && process.env.DB_USER && process.env.DB_PASS) {
     initPool(
       process.env.DB_HOST,
-      parseInt(process.env.DB_PORT ?? '3306'),
+      parseInt(process.env.DB_PORT ?? ''),
       process.env.DB_USER,
       process.env.DB_PASS,
     ).catch(() => {});
