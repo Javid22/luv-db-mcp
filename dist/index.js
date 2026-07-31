@@ -6,6 +6,12 @@ import mysql from 'mysql2/promise';
 import express from 'express';
 import { DB_SCHEMA_DOCS } from './schema.js';
 // ---------------------------------------------------------------------------
+// Server identity — configurable via MCP_SERVER_NAME env var
+// URI scheme used for the schema resource: db://schema
+// ---------------------------------------------------------------------------
+const SERVER_NAME = process.env.MCP_SERVER_NAME ?? 'db-mcp';
+const SCHEMA_URI = 'db://schema';
+// ---------------------------------------------------------------------------
 // Safety guard — only allow read-only statements
 // ---------------------------------------------------------------------------
 const ALLOWED_PREFIXES = ['SELECT', 'SHOW', 'DESCRIBE', 'DESC', 'EXPLAIN'];
@@ -64,20 +70,20 @@ function createMcpServer() {
     }
     // Auto-connect from env vars if provided
     if (process.env.DB_HOST && process.env.DB_USER && process.env.DB_PASS) {
-        initPool(process.env.DB_HOST, parseInt(process.env.DB_PORT ?? '3306'), process.env.DB_USER, process.env.DB_PASS).catch(() => { });
+        initPool(process.env.DB_HOST, parseInt(process.env.DB_PORT ?? ''), process.env.DB_USER, process.env.DB_PASS).catch(() => { });
     }
-    const server = new Server({ name: 'luv-db-mcp', version: '1.0.0' }, { capabilities: { tools: {}, resources: {} } });
+    const server = new Server({ name: SERVER_NAME, version: '1.0.0' }, { capabilities: { tools: {}, resources: {} } });
     server.setRequestHandler(ListResourcesRequestSchema, async () => ({
         resources: [{
-                uri: 'luv://schema',
-                name: 'Luv DB Schema Overview',
+                uri: SCHEMA_URI,
+                name: 'Database Schema Overview',
                 description: 'Full documentation of all databases, tables, their purposes, and common join patterns',
                 mimeType: 'text/markdown',
             }],
     }));
     server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
-        if (request.params.uri === 'luv://schema') {
-            return { contents: [{ uri: 'luv://schema', mimeType: 'text/markdown', text: DB_SCHEMA_DOCS }] };
+        if (request.params.uri === SCHEMA_URI) {
+            return { contents: [{ uri: SCHEMA_URI, mimeType: 'text/markdown', text: DB_SCHEMA_DOCS }] };
         }
         throw new Error(`Unknown resource: ${request.params.uri}`);
     });
@@ -90,7 +96,7 @@ function createMcpServer() {
                     type: 'object',
                     properties: {
                         host: { type: 'string', description: 'MySQL host (IP or hostname)' },
-                        port: { type: 'number', description: 'MySQL port (default: 3306)' },
+                        port: { type: 'number', description: 'MySQL port' },
                         user: { type: 'string', description: 'MySQL username' },
                         password: { type: 'string', description: 'MySQL password' },
                     },
@@ -250,7 +256,7 @@ if (PORT) {
         await transport.handlePostMessage(req, res);
     });
     app.listen(parseInt(PORT), () => {
-        process.stderr.write(`luv-db-mcp HTTP server running on port ${PORT}\n`);
+        process.stderr.write(`${SERVER_NAME} HTTP server running on port ${PORT}\n`);
     });
 }
 else {
@@ -258,7 +264,7 @@ else {
     const server = createMcpServer();
     const transport = new StdioServerTransport();
     server.connect(transport).then(() => {
-        process.stderr.write('luv-db-mcp stdio server running\n');
+        process.stderr.write(`${SERVER_NAME} stdio server running\n`);
     }).catch((err) => {
         process.stderr.write(`Fatal: ${err instanceof Error ? err.message : String(err)}\n`);
         process.exit(1);

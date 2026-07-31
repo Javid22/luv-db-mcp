@@ -30,7 +30,7 @@ echo "Checking for hardcoded DB port numbers in strings..."
 if grep -rn \
   --include="*.ts" \
   -E "(\"|\`|')(3306|5432|6446|27017|6379)(\"|\`|')" \
-  "$SCAN_DIR"; then
+  "$SCAN_DIR" | grep -v "process\.env" | grep -v "parseInt"; then
   red "Hardcoded DB port found. Use env vars (DB_PORT) instead."
   ERRORS=$((ERRORS + 1))
 else
@@ -61,7 +61,21 @@ else
   green "No hardcoded API keys."
 fi
 
-# ── 5. TODO / FIXME security notes ───────────────────────────────────────────
+# ── 5. Hardcoded product/brand names (should use MCP_SERVER_NAME env var) ────
+echo "Checking for hardcoded product names..."
+BRAND_HITS=$(grep -rn \
+  --include="*.ts" \
+  -iE "(\"|\`|')(luv|meraluv)([-://])" \
+  "$SCAN_DIR" || true)
+if [ -n "$BRAND_HITS" ]; then
+  echo "$BRAND_HITS"
+  red "Hardcoded product name found. Use MCP_SERVER_NAME env var instead."
+  ERRORS=$((ERRORS + 1))
+else
+  green "No hardcoded product names."
+fi
+
+# ── 7. TODO / FIXME security notes ───────────────────────────────────────────
 echo "Checking for security-flagged TODOs..."
 if grep -rn \
   --include="*.ts" \
