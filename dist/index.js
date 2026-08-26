@@ -231,7 +231,6 @@ const PORT = process.env.PORT;
 if (PORT) {
     // ── HTTP / SSE mode (Render, Railway, etc.) ────────────────────────────────
     const app = express();
-    app.use(express.json());
     // Track active SSE transports by session
     const sessions = new Map();
     app.get('/health', (_req, res) => {
