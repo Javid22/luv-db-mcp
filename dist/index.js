@@ -52,10 +52,18 @@ function createMcpServer() {
         if (pool) {
             await pool.end().catch(() => { });
             pool = null;
+            connectedAs = null;
         }
-        pool = mysql.createPool({ host, port, user, password, multipleStatements: false, waitForConnections: true, connectionLimit: 5 });
-        const conn = await pool.getConnection();
-        conn.release();
+        const candidate = mysql.createPool({ host, port, user, password, multipleStatements: false, waitForConnections: true, connectionLimit: 5 });
+        try {
+            const conn = await candidate.getConnection();
+            conn.release();
+        }
+        catch (err) {
+            await candidate.end().catch(() => { });
+            throw err;
+        }
+        pool = candidate;
         connectedAs = `${user}@${host}:${port}`;
     }
     function getPool() {
